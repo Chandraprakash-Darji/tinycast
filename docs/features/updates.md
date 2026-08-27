@@ -27,7 +27,7 @@ release feed the website already reads is the feed the app reads.
   byte-identical to the running app's. That same match is what preserves the Accessibility (TCC)
   grant across the swap, so it is load-bearing twice over.
 - **A build only ever updates within its own channel.** The channels are separate bundle ids installed
-  side by side; crossing would mean installing a different app. `com.tinycast.app.dev` never updates
+  side by side; crossing would mean installing a different app. `com.elregaldo.tinycast.dev` never updates
   at all, and does not advertise the command.
 - **Nothing is installed unless every check passes.** Bundle id, version and signature are all checked
   on the expanded copy before `replaceItemAt` runs, and the running app survives any failure untouched.
@@ -65,8 +65,8 @@ release feed the website already reads is the feed the app reads.
 
 | Bundle id | Channel | Takes |
 | --- | --- | --- |
-| `com.tinycast.app` | `.stable` | releases |
-| `com.tinycast.app.beta` | `.beta` | prereleases |
+| `com.elregaldo.tinycast` | `.stable` | releases |
+| `com.elregaldo.tinycast.beta` | `.beta` | prereleases |
 | anything else | `.development` | nothing |
 
 `AppVersion` parses `MAJOR.MINOR.PATCH` and `MAJOR.MINOR.PATCH-beta.N` with semver precedence: a

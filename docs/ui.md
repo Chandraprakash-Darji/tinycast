@@ -10,24 +10,27 @@ Read this before touching any view body, `Theme` value, or the panel chrome.
 
 ## The look, in one paragraph
 
-Tinycast is a **Raycast-style command palette**: a borderless floating panel whose surface is just the
-OS behind-window blur under a 40% black scrim — there is no gray chrome. Everything on that surface is
-white at a fixed alpha ramp. The header and bottom bar **float over the list as fully transparent
-overlays**; there are no hard-edged bars, strips, or dividers. Rows don't clip under the bars, they
-**dissolve**: a scroll-driven gradient mask ghosts them as they pass beneath. Floating controls (the
-action pill, the menu circle, popover menus) are **Liquid Glass**.
+Tinycast looks like the portfolio's TUI: a **Catppuccin command palette**. The borderless floating
+panel's surface is the portfolio's `background` — Mocha `#1e1e2e` in Dark, Latte `#eff1f5` in Light —
+laid over the OS behind-window blur at ~0.9 alpha, so the desktop still breathes through faintly but
+the panel reads as a flat slab. Ink is Catppuccin `text` / `muted-foreground` instead of pure white,
+borders are the portfolio's Square-Surface1, the accent is Catppuccin mauve, and **nothing rounds**
+(`--radius: 0rem`). The header and bottom bar **float over the list as fully transparent overlays**;
+there are no hard-edged bars, strips, or dividers. Rows don't clip under the bars, they **dissolve**.
+Section labels are the portfolio's signature small mono uppercase (`─── TITLE ────`), and keycaps are
+bordered mono `kbd` chips with a 1px foot. Floating controls (the action slab, the menu square,
+popover menus) are **Liquid Glass**.
 
-That paragraph describes **Dark**, which is the design. Light is the same design with the ink
-inverted: a white scrim over the same blur, and a black-alpha ramp at matched stops. Nothing about
-geometry, type, motion or state changes between them.
+That paragraph describes **Dark**, which is the design. Light is the same design with the ink swapped
+for Latte. Nothing about geometry, type, motion or state changes between them.
 
 Five load-bearing ideas, in priority order:
 
-1. **Surface = scrim over behind-window blur.** No solid backgrounds. Depth comes from the desktop showing through.
-2. **One alpha ramp, never grays.** Ink at fixed stops — white over the dark surface, black over the light one.
+1. **Surface = portfolio `background` over behind-window blur.** A translucent Mocha/Latte slab; depth comes from the desktop showing through faintly, never from hard fills.
+2. **One Catppuccin ramp, never grays.** Ink at muted stops — `text`, `muted-foreground`, and the border/surface values — over the tinted surface.
 3. **Floating bars, not chrome.** Header/footer are transparent overlays; the list fills the whole panel.
 4. **Edges dissolve, they don't clip.** Scroll-driven mask, no separators between list and bars.
-5. **Glass only on floating controls.** The main surface is never glass; pills/menus/circles are.
+5. **Glass only on floating controls.** The main surface is never glass; slabs/squares/menus are.
 
 ---
 
@@ -35,13 +38,15 @@ Five load-bearing ideas, in priority order:
 
 These are the things that quietly break the look if changed. Preserve them unless the task is explicitly to change them.
 
-- **Dark is the baseline and its values are frozen.** Every `Theme.Colors` token resolves per appearance, and its **dark branch is the literal the forced-dark build shipped** — restated, never recomputed. Retune a light branch freely; touch a dark one only when the task is to change Dark. `AppCore.applyAppearance()` is the only place an appearance is assigned, from `AppSettings.appearance`; `.system` assigns `nil` so AppKit follows macOS.
-- **New colors go through `Theme.Colors.ramp(dark:light:)`** (an alpha that inverts) or `adaptive(dark:light:)` (two explicit `NSColor`s, for anything that isn't a plain inversion — `panelScrim`, `glassFrost`). Never a bare `Color.white.opacity(…)` in a view: it disappears in Light.
-- **No grays, no opaque fills on the surface.** Reach for `Theme.Colors.*` instead of `.gray`, `NSColor.windowBackground`, etc.
+- **Dark is the baseline and its values are frozen.** Every `Theme.Colors` token resolves per appearance, and its **dark branch is the literal the portfolio restyle shipped** — Catppuccin Mocha, restated per token, never recomputed. Retune a light branch freely; touch a dark one only when the task is to change Dark. `AppCore.applyAppearance()` is the only place an appearance is assigned, from `AppSettings.appearance`; `.system` assigns `nil` so AppKit follows macOS.
+- **New colors go through `Theme.Colors.catppuccin(dark:light:)`** (one Mocha literal, one Latte literal, optional per-branch alphas) or `adaptive(dark:light:)` for anything outside the two flavours — `glassFrost` stays a white pair. The white/black `ramp` still exists but only for `ExtensionColors`, whose surfaces are the feature's. Never a bare `Color.white.opacity(…)` in a view: it betrays the Catppuccin surface in both appearances.
+- **No grays, no opaque fills on the surface.** Reach for `Theme.Colors.*` instead of `.gray`, `NSColor.windowBackground`, etc. The surface is the translucent `panelScrim` slab; a solid fill where a surface should be is a regression.
 - **Three things stay fixed in both appearances, on purpose.** The `EdgeDissolve`/`OverflowFade` gradients are **mask luminance, not color** — inverting them breaks the dissolve everywhere. `ExtensionTintColors` and a tinted `IconCache` tile keep white ink, because a saturated tile carries its own contrast. And `IconCache` cannot use a dynamic `NSColor` at all: it rasterizes off-main, so the surface is carried explicitly and is part of the cache key.
 - **An icon is drawn for a surface *and* a system icon style, and both move under you.** macOS restyles the icons `NSWorkspace` hands out when System Settings → Appearance → **Icon & widget style** changes, so `IconStyleMonitor` and Tinycast's own appearance both call `IconCache.invalidateStyled()`. **The monitor may not invalidate on the notification itself.** AppKit posts `NSWorkspaceIconAppearanceConfigurationDidChange` before IconServices has swapped what `NSWorkspace` vends — measured at 25–120ms behind, jittering run to run — and the images it hands back are live objects macOS restyles in place, so flattening one on the signal freezes the *outgoing* style into a bitmap nothing ever invalidates again. `IconStyleMonitor` therefore polls `IconCache.styleFingerprint()` until the pixels actually move, and only then invalidates. Waiting also sidesteps the cost: re-flattening every icon the instant a restyle begins forces a cold IconServices regeneration, measured at 160× the settled draw cost. That drops the cached bitmaps, bumps every cache key so an in-flight decode cannot repopulate a stale one, and moves `IconCache.style.generation`. **Any view that draws an icon must key its fetch on that generation** — wrap the view's own key in `IconRequest`, or call `IconCache.observeStyle()` where the icon is resolved synchronously in a `body`. It is reached through `IconCache` rather than injected precisely because icons are drawn in menus, popovers and every list, where a missed injection would be a silent staleness bug.
 - **No hard dividers between the list and the bars.** The header and bottom bar are `safeAreaInset` overlays with no background; separation comes from `edgeDissolve()`, nothing else. (One deliberate exception: the vertical hairline between the clipboard list and its preview pane.)
 - **The panel corner is clipped once, at the root.** `RootPaletteView.body` ends with `.background(panelScrim) → .background(VisualEffectView()) → .clipShape(RoundedRectangle(26, .continuous))`. Keep that order; the scrim goes _over_ the vibrancy, and the clip is last.
+- **Don't use the native scroll edge effect.** Inside a transparent panel it renders a hard-bounded rectangle. Use `edgeDissolve()`, or a gradient `mask` where a surface owns its own fade — `scrollEdgeEffectStyle` draws a *material* where a scroll view meets a safe area, so over a panel that already has `panelScrim` + `VisualEffectView` it composites to nothing. Tried and rejected on `QuickActionResultView`, with and without `safeAreaBar`.
+- **The panel corner is clipped once, at the root.** `RootPaletteView.body` ends with `.background(panelScrim) → .background(VisualEffectView()) → .clipShape(RoundedRectangle(Theme.Radius.panel, .continuous))`. Keep that order; the scrim goes _over_ the vibrancy, and the clip is last. The restyle squares that corner (`panel == 0`, the portfolio's `--radius: 0rem`).
 - **Don't use the native scroll edge effect.** Inside a transparent panel it renders a hard-bounded rectangle. Use `edgeDissolve()`, or a gradient `mask` where a surface owns its own fade — `scrollEdgeEffectStyle` draws a *material* where a scroll view meets a safe area, so over a panel that already has `panelScrim` + `VisualEffectView` it composites to nothing. Tried and rejected on `QuickActionResultView`, with and without `safeAreaBar`.
 - **Test over a light desktop.** Transparency and corner masking bugs only show over bright wallpaper. Dark wallpaper hides them.
 - **No `NSAlert`, no `NSSlider`, no system popovers.** Every confirmation, failure report, value prompt and transient readout is Tinycast's own SwiftUI surface (see "Dialogs & HUD"). An Aqua alert on an alpha-over-vibrancy app reads as a different product, and its `runModal` run loop keeps Carbon hotkeys firing underneath.
@@ -49,7 +54,7 @@ These are the things that quietly break the look if changed. Preserve them unles
 - **Resolve every glyph through `SymbolImage`, not `Image(systemName:)`.** Some catalog symbols are bundled assets in `Assets.xcassets` (`toggleBluetooth`), and `Image(systemName:)` silently renders nothing for those.
 - **↵ runs the primary action, Escape cancels, and Cancel always renders leading** (the left button), matching macOS convention. A button never prints its key cap; hovering it shows a `Tooltip` instead, styled like the palette's own keycap chips.
 - **A transient readout is a HUD, not a dialog.** `VolumeHUDController`'s box is volume and mute only, since that one needs an actual level and number; every other success or info confirmation goes through `MessageHUDController`'s pill, whose trailing glyph *is* its `DialogTone`. A pill has no subject to name, so the icon rule above does not apply to it — and that mapping stays file-scoped so nothing can reach for it when building a `DialogRequest`. A new HUD means a new presenter, not a second shape bolted onto an existing controller.
-- **Glass is for controls; content takes the panel recipe.** `glassEffect` needs a backdrop to lens, so it only works *inside* a window that already has a `VisualEffectView` — the action capsule, the menu circle, `PopoverMenu`, a dialog's buttons. On a bare borderless panel it falls back to an opaque backing and shows as a dark edge. Both HUDs therefore use `panelScrim` → `VisualEffectView()` → `clipShape`, exactly like a dialog.
+- **Glass is for controls; content takes the panel recipe.** `glassEffect` needs a backdrop to lens, so it only works *inside* a window that already has a `VisualEffectView` — the action slab, the menu square, `PopoverMenu`, a dialog's buttons. On a bare borderless panel it falls back to an opaque backing and shows as a dark edge. Both HUDs therefore use `panelScrim` → `VisualEffectView()` → `clipShape`, exactly like a dialog.
 
 ---
 
@@ -74,23 +79,18 @@ section's closing padding). See "Section headers" below.
 
 ### Radius (`Theme.Radius`)
 
-`panel 26` · `row 10` · `card 10` · `dialog 20` · `menuPanel 16` · `menu 6` · `menuRow 10` · `barControl 8` · `thumbnail 6` · `keyCap 6` · `recorderKeyCap 4`
-
-`barControl` dresses the header pop-ups (type filter, AI model), which state a value and drop a menu
-the way a native pop-up button does — a rectangle, not a pill.
-
-**The footer action group stays a `Capsule`, and so do the buttons inside it.** It is the primary
-action, and the pill is the affordance saying so; squaring it off reads as a toolbar. The capsule
-also keeps the pair concentric for free — a capsule's radius is half its height, so the inner
-buttons land exactly `Spacing.xs` inside the wrapper without either radius being written down.
+**Every token is `0`.** The portfolio restyle squares every surface (`--radius: 0rem`), and the tokens
+remain because call sites name them — but none rounds. `panel`, `row`, `card`, `dialog`, `menuPanel`,
+`menu`, `menuRow`, `thumbnail`, `keyCap` and `recorderKeyCap` are all square. `barControl` remains
+an 8-point corner for header pop-up controls.
 
 Notes has no corner of its own: it clips to `panel`, so the two floating surfaces read as siblings.
 
-`dialog` sits between `menuPanel` and `panel` so a dialog reads as a smaller sibling of the palette, not a second palette.
+Capsule shapes survive only where they are a deliberate pill, not a token: the message HUD, tooltips,
+the volume track, and the onboarding/extension toggle orbs.
 
-`menu` is the shared small-control corner (sidebar tiles, About link pills); `menuRow` is the slightly rounder hover highlight behind popover-menu rows.
-
-Always `RoundedRectangle(cornerRadius:, style: .continuous)` — continuous corners everywhere, never `.circular`.
+Always `RoundedRectangle(cornerRadius:, style: .continuous)` — continuous corners everywhere when a
+corner exists, never `.circular`.
 
 #### Concentric corners
 
@@ -139,43 +139,51 @@ Notes adds `noteWindow 520×420` (opening size on a first run only), `noteWindow
 ### Typography (`Theme.Typography`)
 
 System fonts only — **no fixed point sizes in views** (honors Dynamic Type). `searchField` is the one
-explicit size (20pt regular). Use `rowTitle` (`.body`), `sectionHeader` (`.subheadline.medium`),
-`rowTrailing`/`bar`/`menuRow`/`keyCap` etc. as named.
+explicit size (20pt regular). Rows stay system text (`rowTitle` `.body`, `menuRow` `.body`); the TUI
+voice lives in the mono tokens: `sectionHeader` (small mono semibold, uppercased and `labelTracking`'d
+in `SectionHeader`), `keyCap`/`compactKeyCap`/`heroKeyCap` (mono kbd chips), `rowTrailing` and
+`menuShortcut` (mono captions), and `bar` (mono uppercase for footer/dialog buttons).
 
-### Colors (`Theme.Colors`) — the alpha ramp
+### Colors (`Theme.Colors`) — the Catppuccin ramp
 
-The **Dark column is the design and is frozen**; each value is the literal the forced-dark build
-shipped. Light is the same stop with the ink inverted, and is the only column open to retuning.
+The **Dark column is the design and is frozen**; each value is the literal the portfolio restyle
+shipped (Catppuccin Mocha). Light is the same token in Catppuccin Latte, and is the only column open
+to retuning. Values go through `catppuccin(dark:light:)`; alphas appear where the portfolio's own
+semantics call for one (a muted at `/60`, a surface at half strength).
 
-| Token             | Dark           | Light          | Use                                              |
-| ----------------- | -------------- | -------------- | ------------------------------------------------ |
-| `panelScrim`      | black **0.40** | white **0.55** | the panel scrim over vibrancy                    |
-| `selection`       | white 0.10     | black 0.09     | selected row fill (keyboard/active selection)    |
-| `rowHover`        | white 0.05     | black 0.045    | mouse-hover fill (always fainter than selection) |
-| `menuHover`       | white 0.10     | black 0.09     | popover-menu row hover                           |
-| `separator`       | white 0.10     | black 0.12     | the clipboard list↔preview hairline              |
-| `controlSurface`  | white 0.10     | black 0.08     | filled keycaps, glyph tiles                      |
-| `border`          | white 0.20     | black 0.18     | outlined keycap borders                          |
-| `textPrimary`     | white 1.00     | black 1.00     | search text and caret, volume fill and knob      |
-| `textSecondary`   | white 0.60     | black 0.60     | secondary labels                                 |
-| `textTertiary`    | white 0.40     | black 0.42     | placeholders, trailing kind labels               |
-| `iconPlaceholder` | white 0.06     | black 0.06     | the empty tile a row paints while an icon decodes |
-| `sheen`           | white 0.04     | black 0.04     | the wash behind the Onboarding header            |
-| `cardFill`        | white 0.05     | black 0.04     | settings/calc card fill                          |
-| `cardStroke`      | white 0.10     | black 0.10     | settings/calc card border + inset dividers       |
-| `glassFrost`      | white 0.05     | white **0.25** | whitish tint layered into the floating glass     |
-| `noteText`        | white 0.90     | black 0.85     | Notes Markdown source                            |
-| `dropGuide`       | white 0.35     | black 0.35     | the palette's drop guides while dragging         |
+| Token             | Dark (Mocha) | Light (Latte) | Use                                              |
+| ----------------- | ------------ | ------------- | ------------------------------------------------ |
+| `panelScrim`      | `#1e1e2e` @0.86 | `#eff1f5` @0.90 | the panel slab over vibrancy                   |
+| `selection`       | `#313244`    | `#e6e8ef`      | selected row fill (keyboard/active selection)    |
+| `rowHover`        | `#313244` @0.55 | `#e6e8ef` @0.55 | mouse-hover fill (always fainter than selection) |
+| `menuHover`       | `#313244`    | `#e6e8ef`      | popover-menu row hover                           |
+| `separator`       | `#454759` @0.6 | `#babece` @0.8 | the clipboard list↔preview hairline              |
+| `controlSurface`  | `#313244`    | `#e6e8ef`      | filled keycaps, glyph tiles                      |
+| `border`          | `#454759`    | `#babece`      | outlined keycap borders, `───` section rules     |
+| `textPrimary`     | `#cdd6f4`    | `#4b4e68`      | search text and caret, volume fill and knob      |
+| `textSecondary`   | `#80859d`    | `#696d8c`      | secondary labels (portfolio `muted-foreground`)  |
+| `textTertiary`    | `#80859d` @0.75 | `#696d8c` @0.8 | placeholders, trailing kind labels             |
+| `iconPlaceholder` | `#313244` @0.5 | `#e6e8ef` @0.6 | the empty tile a row paints while an icon decodes |
+| `sheen`           | `#454759` @0.22 | `#babece` @0.3 | the wash behind the Onboarding header          |
+| `cardFill`        | `#313244` @0.5 | `#e6e8ef` @0.55 | settings/calc card fill                          |
+| `cardStroke`      | `#454759` @0.8 | `#babece` @0.9 | settings/calc card border + inset dividers       |
+| `glassFrost`      | white 0.06    | white **0.30** | whitish tint layered into the floating glass     |
+| `noteText`        | `#cdd6f4`    | `#4b4e68`      | Notes Markdown source                            |
+| `brand`           | `#caa6f7`    | `#8839ef`      | the mauve accent (About support callout)         |
+| `dropGuide`       | `#80859d` @0.85 | `#696d8c` @0.85 | the palette's drop guides while dragging       |
+| `dropGuideArmed`  | `#89b5fa`    | `#1f66f4`      | a drop guide once a release would snap home      |
+| `destructive`     | `#f38ca9`    | `#d20f39`      | destructive labels and `.danger` glyphs          |
+| `success`         | `#a6e3a1`    | `#37a12b`      | `.success` glyphs                                |
 
 `glassFrost` is white in **both** — the frost brightens glass rather than inking it — so it is an
-`adaptive` pair, not a `ramp`. `panelScrim` is the ramp's inverse, for the same reason.
-`brand`, `destructive`, `success` and `dropGuideArmed` are fixed hues and adapt on their own.
+`adaptive` pair, not a Catppuccin flavour. `panelScrim` carries alphas because it stays translucent
+over the vibrancy. `brand`, `destructive`, `success` and `dropGuideArmed` are fixed hues.
 
 Beyond these, `.secondary`/`.tertiary` foreground styles are fine for SF Symbols (they resolve against
 the environment's appearance). **Selection always beats hover** when a row is both.
 
 An extension's own surfaces live in `ExtensionColors` (`Features/Extensions/UI/`), not here — the
-`ramp` mechanism is shared, the values are the feature's. See the Extensions non-negotiable in
+`ramp` helper is shared, the values are the feature's. See the Extensions non-negotiable in
 [`AGENTS.md`](../AGENTS.md).
 
 ---
@@ -188,7 +196,7 @@ Source: `Palette/PalettePanel.swift`, `Palette/RootPaletteView.swift`.
 - **The results layer fills the whole panel.** The header and bottom bar attach via `.safeAreaInset(edge: .top/.bottom)` as transparent overlays that float _over_ the list. The list underlaps them and dissolves at the edges.
 - **Header** (`headerHeight 44`): a back-chevron _or_ mode glyph, then the plain `TextField` (no border/background). Sub-screens (Clipboard, Calculator History) show the back chevron; the launcher shows a magnifying glass. The search icon aligns horizontally with row content.
 - **Compact keyboard entry:** pressing `↓` in the collapsed launcher expands the results and selects the first row without replacing or defocusing the shared search field.
-- **Bottom bar** (`bottomBarHeight 52`): a menu circle on the left, the action group on the right — both floating glass, no bar background. The action group is one glass `Capsule` holding the primary-action pill (label + `↵`) and the Actions toggle (`⌘K`).
+- **Bottom bar** (`bottomBarHeight 52`): a menu square on the left, the action group on the right — both floating glass, no bar background. The action group is one glass slab (`RoundedRectangle(menuPanel)`, square under this theme) holding the primary-action pill (mono uppercase label + `↵`) and the Actions toggle (`⌘K`).
 - **`BarButton`** is the shared bar control: bare label at rest, a `rowHover` capsule on hover, `barButtonHeight 28`. It carries the footer's two buttons and the clipboard header's type filter, so those hover identically. Hover state lives inside it, so sweeping one never re-renders the palette body.
 
 ---
@@ -209,8 +217,8 @@ The title bar is a 44-point band, and both halves of it are deliberate. `titleVi
 drops `NSThemeFrame` off its centred-title layout, so the native title would sit beside the traffic
 lights. The drawn title is not hit-testable, so clicks fall through to the real title bar and drag
 the window. The three actions cannot do that, so they live in an `NSTitlebarAccessoryViewController`
-at `.trailing` — `NoteTitlebarActions`, the launcher's footer capsule (`BarButton` in a
-`frosted(in: Capsule())`) with glyphs in place of pills. Its 44-point height is what sizes the band.
+at `.trailing` — `NoteTitlebarActions`, the launcher's footer control (`BarButton` in a
+`frosted(in: RoundedRectangle(menuPanel))`) with glyphs in place of pills. Its 44-point height is what sizes the band.
 
 `NotesWindowController` no longer computes frames: the user owns the size, and AppKit autosaves both
 position and size under `"Notes Window"`. The window shows exactly one surface at a time — editor,
@@ -289,13 +297,15 @@ All lists share one row grammar so launcher and clipboard look identical:
 - **Hover is armed by pointer movement, not by the pointer's position** (`armedHover`, `Palette/HoverArming.swift`). A palette shown under a resting pointer lights nothing, and keys or a scroll drop the highlight until the pointer moves clear of the slop radius around where it stood — a row must never light up because it *slid under* a still pointer. Two measured facts the rule rests on: SwiftUI fires hover phases for rows arriving under a stationary pointer, but **not** for a lit row that merely shifts, so `PaletteState.hoverDisarmToken` clears what is already lit; and a wheel gesture ends with a mouse-moved event carrying no displacement, so *event type is not evidence the pointer moved*. `Tests/hover-arming-test.swift` pins both halves.
 - **Scroll moves only on keyboard nav/reset**, driven by a `ScrollIntent` (`DesignSystem/Scrolling/ScrollIntent.swift`) — mouse selection targets a visible row and never yanks scroll. `.top` scrolls to the origin anchor that `scrollOriginAnchor()` installs — a zero-height overlay applied to the scrolled content _after_ its padding, so it marks offset 0 without joining the layout and the restored origin is exact (targeting the first row instead leaves the top padding hidden under the header); it is restated when the header's inset settles after mount, which moves the resting offset. A `.follow` that lands on flat index 0 restores the origin instead, so that row's section header comes back into view. One intent state serves every mode — they never coexist.
 - **`.follow` is an invariant, not a command** (`scrollFollowsSelection`, `DesignSystem/Scrolling/`). Each list marks its selected row with `selectionFrame(_:)`, and the modifier keeps that row inside the band between the floating bars, re-checking as the geometry and the row's frame settle, then **stops watching the moment the row is inside**. That self-release is what keeps it safe: once a keystroke has landed nothing is observing, so a wheel scroll — or a scrollbar-thumb drag, which `onScrollPhaseChange` cannot see at all — is never pulled back. Two measured facts it rests on: `frame(in: .scrollView)` reports the *inset-excluded* space, so the band is simply `0…containerSize.height`; and SwiftUI's minimal scroll-to-visible counts the strip behind the bottom bar as visible while its *destination* math respects the insets. Hence the split — Tinycast decides **whether** to scroll (`SelectionReveal`, pure, pinned by `Tests/scroll-reveal-test.swift`) and SwiftUI performs the move with an explicit `.top`/`.bottom` anchor. Scroll far by hand and the lazy stack drops the selected row, so there is no frame to measure at all: the fallback brings it back by id and the invariant, still standing, re-checks the moment it reports — which is why arrowing after a long mouse scroll lands the selection on screen rather than moving it out of sight. A one-shot `scrollTo` here left the highlight stranded under the pill whenever the target row's layout was not yet known, with nothing looking again until the next key press. **The id passed to `scrollFollowsSelection` must be the lazy container's own `ForEach` identity** — an `.id()` applied inside a row registers only once that row has been realized, which is exactly when scrolling to it is unnecessary, and the fallback that brings a dropped row back by id then has nothing to aim at.
-- **Keycaps** use `KeyCapChip`: `.outline` (white-0.20 border) for hotkey hints on rows, `.filled` (white-0.10 fill) for footer shortcuts.
+- **Keycaps** use `KeyCapChip`, the portfolio `kbd`: mono chips with a `border` outline (`.outline` hotkey hints on rows) or `controlSurface` fill (`.filled` footer shortcuts), plus a 1px `border` foot so a chip reads seated.
 
 ### Section headers
 
 All six palette lists (App Launcher, Clipboard, Emoji, File Search, Calculator History, Uninstall) render category labels
-through one shared **`SectionHeader`** (`.subheadline.medium`, secondary — `Features/Launcher/UI/SectionHeader.swift`).
-The launcher shows a single "Results" header over search matches, and per-kind sections
+through one shared **`SectionHeader`** (`Features/Launcher/UI/SectionHeader.swift`): the portfolio's
+small mono uppercase label flanked by `───` hairlines — a fixed leading rule and a trailing rule
+filling the row — in `textSecondary`. The launcher shows a single "Results"
+header over search matches, and per-kind sections
 (Favorites / Applications / System Settings / Commands) for the empty query; clipboard/history use
 date buckets (Today / Yesterday / …), and the clipboard adds a "Pinned" section above them holding
 every pinned entry (filtered searches included).
@@ -313,11 +323,11 @@ Source: `Theme.frosted(in:)`, `DesignSystem/PopoverMenu.swift`.
 
 Glass is **only** for floating controls, never the main surface.
 
-- `View.frosted(in:)` = `glassEffect(.regular.interactive().tint(glassFrost), in:)` + `.tint(.clear)` — interactive lensing with a whitish frost tint (`glassFrost`) so the glass reads brighter than clear. Used on the action-group capsule, the menu circle, `PopoverMenu` and a dialog's buttons — always _inside_ a window that already has a `VisualEffectView` behind it. Neither HUD uses it: on a panel of its own, glass has no backdrop to lens and falls back to an opaque backing that reads as a dark edge, so both take the panel recipe instead (see "Dialogs & HUD"). Tune the frost amount via the `glassFrost` token, not per call site.
+- `View.frosted(in:)` = `glassEffect(.regular.interactive().tint(glassFrost), in:)` + `.tint(.clear)` — interactive lensing with a whitish frost tint (`glassFrost`) so the glass reads brighter than clear. Used on the action-group slab, the menu square, `PopoverMenu` and a dialog's buttons — always _inside_ a window that already has a `VisualEffectView` behind it. Neither HUD uses it: on a panel of its own, glass has no backdrop to lens and falls back to an opaque backing that reads as a dark edge, so both take the panel recipe instead (see "Dialogs & HUD"). Tune the frost amount via the `glassFrost` token, not per call site.
 - **Menus are in-window overlays, not system popovers.** `.contextMenu`/`NSMenu` stall clicks for seconds inside a `LazyVStack` and spill outside the panel. Use `PopoverMenu` anchored to a corner via `.overlay`, inset `menuInset` (8pt) so its own corner isn't clipped by the panel's. A menu hung off a control instead of a corner — the clipboard type filter, `.topTrailing` — insets by that control's own metrics so their edges line up.
 - **A menu's `width` is fixed, never intrinsic**, so it can't jitter as its rows change: `menuWidth 276` by default, or a token of its own where that reads too wide (`clipboardFilterMenuWidth 200`).
-- **`PopoverMenu`** uses `glassEffect(.regular, in: RoundedRectangle(menuPanel 16))` with **no hand-tuned shadow** — Tahoe glass carries its own elevation; adding a drop shadow reads heavy and non-native.
-- `PopoverMenuRow`: leading glyph, label, trailing shortcut glyph, `menuHover` fill on hover, `menuRow 10` corner. Menus animate in with `.opacity + .scale(0.96)` from the anchored corner, `easeOut 0.14`.
+- **`PopoverMenu`** uses `glassEffect(.regular, in: RoundedRectangle(menuPanel))` — square under this theme — with **no hand-tuned shadow**: Tahoe glass carries its own elevation; adding a drop shadow reads heavy and non-native.
+- `PopoverMenuRow`: leading glyph, label, trailing shortcut glyph, `menuHover` fill on hover, square `menuRow` corner. Menus animate in with `.opacity + .scale(0.96)` from the anchored corner, `easeOut 0.14`.
 - The glyph is a `PopoverMenuIcon`: `.symbol` (SF Symbol, `hierarchical`, secondary — or **red** when `isDestructive`) or `.file` (a real app icon via `IconCache`, used by the paste rows to show the paste target). `PopoverMenuItem` keeps a `systemImage:` convenience init, so symbol rows read exactly as before.
 - **Both glyph kinds share one square `menuIcon` (20) slot**, which is what makes symbol and app-icon rows read as the same size and pins a single row height. 20 is deliberately larger than the artwork looks: an `IconCache` icon paints only ~85% of its canvas (13pt visible at a 16pt slot), while a `.body` SF Symbol renders 17–18pt tall — at 20 the icon lands on 17pt and the two match. Measure before changing it.
 - Menu rows are the one place that uses `sm` for the icon→label gap instead of the row-standard `lg`, because that slot's built-in slack already contributes 2–3pt of apparent space.
@@ -357,11 +367,11 @@ sole owner rule) and is the only presenter, so every confirmation in the app loo
   since importing a file destroys nothing — and running a shell command the user wrote themselves is
   `.neutral` + `.standard` rather than a red alarm.
 - **Surface.** A dialog reuses the palette's recipe `panelScrim` → `VisualEffectView()` →
-  `clipShape(RoundedRectangle(dialog 20))`, in that order at `dialogWidth 420`. Glass is reserved for
+  `clipShape(RoundedRectangle(dialog))`, in that order at `dialogWidth 420`. Glass is reserved for
   the buttons, matching the "glass only on floating controls" rule. The **volume HUD takes the same
   recipe**, and so does the **message pill**. That is the line: glass needs a backdrop to lens, so it
-  only works _inside_ a window that already has a `VisualEffectView` behind it — the action capsule,
-  the menu circle, `PopoverMenu`, a dialog's buttons. On a bare borderless panel of its own it falls
+  only works _inside_ a window that already has a `VisualEffectView` behind it — the action slab,
+  the menu square, `PopoverMenu`, a dialog's buttons. On a bare borderless panel of its own it falls
   back to an opaque backing that shows as a dark edge outside the shape, which is exactly what the
   pill did before it moved to the recipe.
 - **Layout.** Leading glyph (`dialogIcon 32`), title (`.headline`) + wrapped secondary message,

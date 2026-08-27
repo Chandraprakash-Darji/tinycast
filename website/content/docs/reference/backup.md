@@ -81,7 +81,7 @@ Everything a backup carries is also an ordinary file on disk:
 
 | What                                          | Where                                                       |
 | --------------------------------------------- | ----------------------------------------------------------- |
-| [Snippets](/docs/features/snippets)           | `~/Library/Application Support/com.tinycast.app/Snippets/`  |
+| [Snippets](/docs/features/snippets)           | `~/Library/Application Support/com.elregaldo.tinycast/Snippets/` |
 | [Notes](/docs/features/notes)                 | `.../Notes/`                                                |
 | [Quicklinks](/docs/launcher/quicklinks)       | `.../quicklinks.sqlite3` — and it has its own JSON export   |
 | [Clipboard history](/docs/features/clipboard) | `.../clipboard.sqlite3`, with images in `.../images/`       |

@@ -661,31 +661,37 @@ struct RootPaletteView: View {
         }
     }
 
-    /// The footer control group: primary action and the Actions toggle sharing one glass capsule.
+    /// The footer control group: primary action and the Actions toggle sharing one glass slab.
     private func actionGroup(pillLabel: String) -> some View {
         HStack(spacing: 2) {
             BarButton(action: activateSelection) {
                 HStack(spacing: Theme.Spacing.sm) {
                     Text(pillLabel)
                         .font(Theme.Typography.bar)
+                        .textCase(.uppercase)
                         .foregroundStyle(pillTint)
-                    KeyCapChip(text: "↵", style: .outline)
+                    KeyCapChip(text: "↵", style: .bare)
                 }
             }
             BarButton(action: toggleActions) {
                 HStack(spacing: Theme.Spacing.sm) {
                     Text("Actions")
                         .font(Theme.Typography.bar)
+                        .textCase(.uppercase)
                         .foregroundStyle(Theme.Colors.textSecondary)
                     HStack(spacing: Theme.Spacing.xxs) {
-                        KeyCapChip(text: "⌘", style: .outline)
-                        KeyCapChip(text: "K", style: .outline)
+                        KeyCapChip(text: "⌘", style: .bare)
+                        KeyCapChip(text: "K", style: .bare)
                     }
                 }
             }
         }
         .padding(Theme.Spacing.xs)
-        .frosted(in: Capsule())
+        .frosted(in: RoundedRectangle(cornerRadius: Theme.Radius.menuPanel, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: Theme.Radius.menuPanel, style: .continuous)
+                .strokeBorder(Theme.Colors.border, lineWidth: 1)
+        }
     }
 
     /// The one path opening the Actions menu, sampling the state its rows depend on.
@@ -907,7 +913,7 @@ private enum OpenMenu {
     case aiModel
 }
 
-/// The footer's menu circle; hover lives here, so a sweep never re-renders the body.
+/// The footer's menu square: hover lives here, so a sweep never re-renders the body.
 private struct MenuCircleButton: View {
     let action: () -> Void
     @State private var hovered = false
@@ -915,17 +921,20 @@ private struct MenuCircleButton: View {
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 3) {
-                Capsule().frame(width: 14, height: 1.5)
-                Capsule().frame(width: 8, height: 1.5)
+                Rectangle().frame(width: 14, height: 1.5)
+                Rectangle().frame(width: 8, height: 1.5)
             }
             .foregroundStyle(Theme.Colors.textSecondary)
             .frame(width: Theme.Size.menuButton, height: Theme.Size.menuButton)
-            .background(Circle().fill(hovered ? Theme.Colors.rowHover : Color.clear))
-            .contentShape(.circle)
+            .background(
+                RoundedRectangle(cornerRadius: Theme.Radius.menuRow, style: .continuous)
+                    .fill(hovered ? Theme.Colors.rowHover : Color.clear))
+            .contentShape(
+                RoundedRectangle(cornerRadius: Theme.Radius.menuRow, style: .continuous))
         }
         .buttonStyle(.plain)
         .onHover { hovered = $0 }
-        .frosted(in: Circle())
+        .frosted(in: RoundedRectangle(cornerRadius: Theme.Radius.menuRow, style: .continuous))
     }
 }
 
@@ -990,7 +999,7 @@ private struct CompactFavoritesRow: View {
                         .foregroundStyle(Theme.Colors.textSecondary)
                         .frame(width: Theme.Size.rowIcon, height: Theme.Size.rowIcon)
                         .background(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            RoundedRectangle(cornerRadius: Theme.Radius.menu, style: .continuous)
                                 .fill(Theme.Colors.controlSurface)
                                 .padding(Theme.Spacing.xxs)
                         )

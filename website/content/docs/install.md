@@ -96,8 +96,8 @@ brew uninstall --cask abue-ammar/tinycast/tinycast
 To remove the files Tinycast created, delete its Application Support and Caches folders:
 
 ```bash
-rm -rf ~/Library/Application\ Support/com.tinycast.app
-rm -rf ~/Library/Caches/com.tinycast.app
+rm -rf ~/Library/Application\ Support/com.elregaldo.tinycast
+rm -rf ~/Library/Caches/com.elregaldo.tinycast
 ```
 
 Your snippets, notes and quicklinks live in that Application Support folder, so copy anything you

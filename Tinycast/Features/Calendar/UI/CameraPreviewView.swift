@@ -105,12 +105,15 @@ private struct PreviewButton: View {
                 )
                 .padding(.horizontal, Theme.Spacing.xl)
                 .frame(height: Theme.Size.menuButton)
-                .contentShape(Capsule())
-                .background(Capsule().fill(hovered ? Theme.Colors.menuHover : Color.clear))
+                .contentShape(
+                    RoundedRectangle(cornerRadius: Theme.Radius.menuPanel, style: .continuous))
+                .background(
+                    RoundedRectangle(cornerRadius: Theme.Radius.menuPanel, style: .continuous)
+                        .fill(hovered ? Theme.Colors.menuHover : Color.clear))
         }
         .buttonStyle(.plain)
         .onHover { hovered = $0 }
-        .frosted(in: Capsule())
+        .frosted(in: RoundedRectangle(cornerRadius: Theme.Radius.menuPanel, style: .continuous))
         .tooltip(keyCap)
     }
 }

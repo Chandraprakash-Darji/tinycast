@@ -51,8 +51,8 @@ jobs:
           # Each channel is a distinct, side-by-side app: its own display name + bundle id,
           # and its own Homebrew cask in the abue-ammar/homebrew-tinycast tap.
           case "$CHANNEL" in
-            beta)   SUFFIX="-beta.${GITHUB_RUN_NUMBER}";  DISPLAY="Tinycast Beta";  BUNDLE="com.tinycast.app.beta";  CASK="tinycast@beta";  PRERELEASE=true ;;
-            stable) SUFFIX="";                            DISPLAY="Tinycast";       BUNDLE="com.tinycast.app";       CASK="tinycast";       PRERELEASE=false ;;
+            beta)   SUFFIX="-beta.${GITHUB_RUN_NUMBER}";  DISPLAY="Tinycast Beta";  BUNDLE="com.elregaldo.tinycast.beta";  CASK="tinycast@beta";  PRERELEASE=true ;;
+            stable) SUFFIX="";                            DISPLAY="Tinycast";       BUNDLE="com.elregaldo.tinycast";       CASK="tinycast";       PRERELEASE=false ;;
           esac
           FULL="${BASE_VERSION}${SUFFIX}"
           {

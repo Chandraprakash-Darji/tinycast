@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Central design tokens; every dark colour is the literal the forced-dark build shipped.
+/// Central design tokens. Colours resolve per appearance; the dark branch is Catppuccin Mocha, light
+/// is Catppuccin Latte — the portfolio's palette — and Dark remains the baseline.
 enum Theme {
     enum Spacing {
         static let xxs: CGFloat = 2
@@ -23,21 +24,22 @@ enum Theme {
     }
 
     enum Radius {
-        static let panel: CGFloat = 26
-        static let row: CGFloat = 10
-        static let menu: CGFloat = 6
-        /// Hover highlight behind a popover menu row.
-        static let menuRow: CGFloat = 10
+        /// The TUI restyle squares every surface — the portfolio's `--radius: 0rem`. The values stay
+        /// named tokens because call sites still reference them; none rounds.
+        static let panel: CGFloat = 0
+        static let row: CGFloat = 0
+        static let menu: CGFloat = 0
+        static let menuRow: CGFloat = 0
         /// A header pop-up button; the footer's action pills stay capsules.
         static let barControl: CGFloat = 8
-        static let menuPanel: CGFloat = 16
+        static let menuPanel: CGFloat = 0
         /// The dialog and HUD surface, so a dialog reads as a sibling of the palette.
-        static let dialog: CGFloat = 20
-        static let thumbnail: CGFloat = 6
-        static let card: CGFloat = 10
-        static let keyCap: CGFloat = 6
+        static let dialog: CGFloat = 0
+        static let thumbnail: CGFloat = 0
+        static let card: CGFloat = 0
+        static let keyCap: CGFloat = 0
         /// Settings shortcut-recorder keycap — smaller than the palette's `keyCap` chip.
-        static let recorderKeyCap: CGFloat = 4
+        static let recorderKeyCap: CGFloat = 0
     }
 
     enum Blur {
@@ -180,6 +182,8 @@ enum Theme {
         static let volumeKnob: CGFloat = 16
         /// Fixed slot for the level readout, sized to the widest string it ever holds.
         static let volumeReadout: CGFloat = 38
+        /// The SectionHeader's leading hairline before its uppercase label.
+        static let sectionRuleWidth: CGFloat = 16
     }
 
     enum Duration {
@@ -205,29 +209,33 @@ enum Theme {
             ofSize: searchFieldSize, weight: .regular)
         static let headerIcon = Font.system(size: 18, weight: .medium)
         static let rowTitle = Font.body
-        static let rowTrailing = Font.callout
-        static let sectionHeader = Font.subheadline.weight(.medium)
+        /// The TUI labels' extra letter-spacing, applied with `Text.tracking` where used.
+        static let labelTracking: CGFloat = 1.0
+        static let rowTrailing = Font.system(.caption, design: .monospaced)
+        /// Section headers: the portfolio's small-mono label, uppercased in `SectionHeader`.
+        static let sectionHeader = Font.system(.caption2, design: .monospaced).weight(.semibold)
         /// A borderless panel's own title, which names the surface rather than a section inside it.
         static let panelTitle = Font.headline
         /// The big value line on the calculator answer card (both source and target sides).
         static let calcResult = Font.title
-        static let keyCap = Font.caption
-        /// Pair with the matching `Size` for `KeyCapChip.Scale`.
-        static let compactKeyCap = Font.caption2
-        static let heroKeyCap = Font.body
+        /// Keycaps are mono kbd chips, matching the portfolio's `<kbd>` faces.
+        static let keyCap = Font.system(.caption, design: .monospaced)
+        static let compactKeyCap = Font.system(.caption2, design: .monospaced)
+        static let heroKeyCap = Font.system(.body, design: .monospaced)
         static let markdownHeading1 = Font.title2.weight(.semibold)
         static let markdownHeading2 = Font.title3.weight(.semibold)
         static let markdownHeading3 = Font.headline
         static let code = Font.system(.callout, design: .monospaced)
         static let inlineCode = Font.body.monospaced()
-        static let bar = Font.callout.weight(.medium)
+        /// Footer and dialog pills: mono uppercase, the portfolio's button voice.
+        static let bar = Font.system(.caption, design: .monospaced).weight(.medium)
         /// A staged chat attachment's name beside the search text; the NSFont measures the chip.
         static let chip = Font.callout
         @MainActor static let chipNSFont = NSFont.preferredFont(forTextStyle: .callout)
         /// A dropdown control's trailing chevron, deliberately smaller than the label it follows.
         static let disclosure = Font.caption.weight(.semibold)
         static let menuRow = Font.body
-        static let menuShortcut = Font.callout
+        static let menuShortcut = Font.system(.caption, design: .monospaced)
         static let menuIcon = Font.body
         static let noteTitle = Font.headline
     }
@@ -238,45 +246,60 @@ enum Theme {
             Color(nsColor: NSColor(name: nil) { $0.isDark ? dark : light })
         }
 
-        /// The alpha ramp, inverted: white ink over the dark surface, black ink over the light one.
+        /// One Catppuccin flavour per appearance: Mocha when the surface is dark, Latte in light.
+        /// The two alphas let a translucent value stay a token instead of a `.opacity` at the site.
+        static func catppuccin(
+            dark: UInt32, light: UInt32, darkAlpha: CGFloat = 1, lightAlpha: CGFloat = 1
+        ) -> Color {
+            adaptive(dark: .srgb(dark, alpha: darkAlpha), light: .srgb(light, alpha: lightAlpha))
+        }
+
+        /// The white/black ink ramp, kept for `ExtensionColors`: extension surfaces are the
+        /// feature's own, and their values are tuned against that ink rather than Catppuccin.
         static func ramp(dark: Double, light: Double) -> Color {
             adaptive(dark: .srgbInk(1, alpha: dark), light: .srgbInk(0, alpha: light))
         }
 
-        /// The ramp's inverse: the scrim darkens the dark surface and lightens the light one.
-        static let panelScrim = adaptive(dark: .srgbInk(0, alpha: 0.40), light: .srgbInk(1, alpha: 0.55))
-        /// Selection fill, shared by every list so they look identical.
-        static let selection = ramp(dark: 0.10, light: 0.09)
-        /// Mouse hover: a fainter layer, visually distinct from selection.
-        static let rowHover = ramp(dark: 0.05, light: 0.045)
-        static let menuHover = ramp(dark: 0.10, light: 0.09)
-        static let separator = ramp(dark: 0.10, light: 0.12)
-        /// Small control surfaces: kbd chips, glyph tiles.
-        static let controlSurface = ramp(dark: 0.10, light: 0.08)
-        /// Control borders: outlined kbd chips.
-        static let border = ramp(dark: 0.20, light: 0.18)
-        /// Alpha 1, so a call site can dim it with `.opacity` and land on the value it replaced.
-        static let textPrimary = ramp(dark: 1.0, light: 1.0)
-        static let textSecondary = ramp(dark: 0.60, light: 0.60)
-        static let textTertiary = ramp(dark: 0.40, light: 0.42)
-        static let noteText = ramp(dark: 0.90, light: 0.85)
-        static let iconPlaceholder = ramp(dark: 0.06, light: 0.06)
+        /// The palette's surface: portfolio `background` over the behind-window blur, so the desktop
+        /// still shows through faintly while the panel reads as a flat Mocha/Latte slab.
+        static let panelScrim = catppuccin(dark: 0x1e1e2e, light: 0xeff1f5, darkAlpha: 0.86, lightAlpha: 0.90)
+        /// Selection fill, shared by every list: the portfolio's `muted`/`card` surface.
+        static let selection = catppuccin(dark: 0x313244, light: 0xe6e8ef)
+        /// Mouse hover: the same surface half-strength, visually distinct from selection.
+        static let rowHover = catppuccin(dark: 0x313244, light: 0xe6e8ef, darkAlpha: 0.55, lightAlpha: 0.55)
+        /// Popover-menu row hover — like selection, since a menu's rows sit on their own glass.
+        static let menuHover = catppuccin(dark: 0x313244, light: 0xe6e8ef)
+        /// Hairlines: the clipboard list↔preview split and section rules' tails.
+        static let separator = catppuccin(dark: 0x454759, light: 0xbabece, darkAlpha: 0.6, lightAlpha: 0.8)
+        /// Small control surfaces: filled keycaps, glyph tiles — the portfolio's `bg-muted`.
+        static let controlSurface = catppuccin(dark: 0x313244, light: 0xe6e8ef)
+        /// Control borders: outlined keycaps, `───` rules — the portfolio's `border`.
+        static let border = catppuccin(dark: 0x454759, light: 0xbabece)
+        /// Primary ink — the portfolio's `foreground`.
+        static let textPrimary = catppuccin(dark: 0xcdd6f4, light: 0x4b4e68)
+        /// Secondary ink — the portfolio's `muted-foreground`.
+        static let textSecondary = catppuccin(dark: 0x80859d, light: 0x696d8c)
+        /// Tertiary ink — the same muted voice at the portfolio's dimmed `/60` emphasis.
+        static let textTertiary = catppuccin(dark: 0x80859d, light: 0x696d8c, darkAlpha: 0.75, lightAlpha: 0.80)
+        static let noteText = catppuccin(dark: 0xcdd6f4, light: 0x4b4e68)
+        /// The empty tile behind a row icon still decoding.
+        static let iconPlaceholder = catppuccin(dark: 0x313244, light: 0xe6e8ef, darkAlpha: 0.5, lightAlpha: 0.6)
         /// The faint wash behind the Onboarding header.
-        static let sheen = ramp(dark: 0.04, light: 0.04)
+        static let sheen = catppuccin(dark: 0x454759, light: 0xbabece, darkAlpha: 0.22, lightAlpha: 0.30)
         /// The Settings card: a faint surface whose border doubles as the row divider.
-        static let cardFill = ramp(dark: 0.05, light: 0.04)
-        static let cardStroke = ramp(dark: 0.10, light: 0.10)
-        /// White in both: the frost brightens glass, and light glass needs more to read at all.
-        static let glassFrost = adaptive(dark: .srgbInk(1, alpha: 0.05), light: .srgbInk(1, alpha: 0.25))
-        /// The violet of the app mark, used only to tint the About support callout.
-        static let brand = Color(red: 0.525, green: 0.231, blue: 1.0)
-        /// The palette's drop guides while dragging, and once a release would snap it home.
-        static let dropGuide = ramp(dark: 0.35, light: 0.35)
-        static let dropGuideArmed = Color.blue
-        /// Destructive tint: a destructive label, and a `.danger` dialog's glyph.
-        static let destructive = Color.red
-        /// Success tint: the leading glyph of a `.success` dialog.
-        static let success = Color.green
+        static let cardFill = catppuccin(dark: 0x313244, light: 0xe6e8ef, darkAlpha: 0.5, lightAlpha: 0.55)
+        static let cardStroke = catppuccin(dark: 0x454759, light: 0xbabece, darkAlpha: 0.8, lightAlpha: 0.9)
+        /// White in both: the frost brightens glass, and light glass needs more of it to read at all.
+        static let glassFrost = adaptive(dark: .srgbInk(1, alpha: 0.06), light: .srgbInk(1, alpha: 0.30))
+        /// The portfolio's mauve accent (`--primary`), tinting the About support callout.
+        static let brand = catppuccin(dark: 0xcaa6f7, light: 0x8839ef)
+        /// The palette's drop guides while dragging; the armed snap-home state turns portfolio blue.
+        static let dropGuide = catppuccin(dark: 0x80859d, light: 0x696d8c, darkAlpha: 0.85, lightAlpha: 0.85)
+        static let dropGuideArmed = catppuccin(dark: 0x89b5fa, light: 0x1f66f4)
+        /// Destructive tint: destructive labels, and a `.danger` dialog's glyph — portfolio red.
+        static let destructive = catppuccin(dark: 0xf38ca9, light: 0xd20f39)
+        /// Success tint: the leading glyph of a `.success` dialog — portfolio green.
+        static let success = catppuccin(dark: 0xa6e3a1, light: 0x37a12b)
         /// Progress tint: the message pill's spinner while the work behind it is still running.
         static let progress = Color.blue
         /// The command output window's page: a flat surface the log sits directly on.
@@ -290,5 +313,16 @@ extension View {
     func frosted(in shape: some Shape) -> some View {
         glassEffect(.regular.interactive().tint(Theme.Colors.glassFrost), in: shape)
             .tint(.clear)
+    }
+}
+
+private extension NSColor {
+    /// SRGB literal from the portfolio's 0xRRGGBB tokens.
+    static func srgb(_ hex: UInt32, alpha: CGFloat = 1) -> NSColor {
+        NSColor(
+            srgbRed: CGFloat((hex >> 16) & 0xFF) / 255,
+            green: CGFloat((hex >> 8) & 0xFF) / 255,
+            blue: CGFloat(hex & 0xFF) / 255,
+            alpha: alpha)
     }
 }

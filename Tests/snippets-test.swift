@@ -195,13 +195,13 @@ struct SnippetsTests {
 
         let channelRoot = root.appendingPathComponent("channels", isDirectory: true)
         let stable = SnippetRepository(
-            bundleIdentifier: "com.tinycast.app",
+            bundleIdentifier: "com.elregaldo.tinycast",
             applicationSupportRoot: channelRoot)
         let beta = SnippetRepository(
-            bundleIdentifier: "com.tinycast.app.beta",
+            bundleIdentifier: "com.elregaldo.tinycast.beta",
             applicationSupportRoot: channelRoot)
         let dev = SnippetRepository(
-            bundleIdentifier: "com.tinycast.app.dev",
+            bundleIdentifier: "com.elregaldo.tinycast.dev",
             applicationSupportRoot: channelRoot)
 
         check(

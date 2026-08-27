@@ -1,6 +1,6 @@
 name: Tinycast
 options:
-  bundleIdPrefix: com.tinycast
+  bundleIdPrefix: com.elregaldo.tinycast
   deploymentTarget:
     macOS: "26.0"
   createIntermediateGroups: true
@@ -37,7 +37,7 @@ targets:
         buildPhase: resources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.tinycast.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.elregaldo.tinycast
         INFOPLIST_FILE: Tinycast/Info.plist
         CODE_SIGN_ENTITLEMENTS: Tinycast/Tinycast.entitlements
         ASSETCATALOG_COMPILER_APPICON_NAME: tinycast
@@ -51,4 +51,4 @@ targets:
         # inheriting — and corrupting — the installed app's state.
         Debug:
           PRODUCT_NAME: Tinycast Dev
-          PRODUCT_BUNDLE_IDENTIFIER: com.tinycast.app.dev
+          PRODUCT_BUNDLE_IDENTIFIER: com.elregaldo.tinycast.dev

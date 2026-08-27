@@ -85,7 +85,7 @@ struct NotesView: View {
                 .font(Theme.Typography.bar)
                 .padding(.horizontal, Theme.Spacing.xl)
                 .frame(height: Theme.Size.barButtonHeight)
-                .frosted(in: Capsule())
+                .frosted(in: RoundedRectangle(cornerRadius: Theme.Radius.menuPanel, style: .continuous))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -111,7 +111,7 @@ private struct NoteTitlebarActions: View {
             action("folder", "Open Notes Folder", "Open Notes Folder  ⌘O", notes.openNotesFolder)
         }
         .padding(Theme.Spacing.xs)
-        .frosted(in: Capsule())
+        .frosted(in: RoundedRectangle(cornerRadius: Theme.Radius.menuPanel, style: .continuous))
         .padding(.trailing, Theme.Spacing.md)
     }
 

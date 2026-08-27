@@ -38,7 +38,7 @@ Three commands, each with its own optional global shortcut:
 Notes live in Tinycast's Application Support folder, one per note:
 
 ```
-~/Library/Application Support/com.tinycast.app/Notes/
+~/Library/Application Support/com.elregaldo.tinycast/Notes/
 ```
 
 **One regular `.md` file is one note, and its filename without the extension is its title.** There is

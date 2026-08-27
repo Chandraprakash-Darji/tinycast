@@ -5,6 +5,7 @@ struct KeyCapChip: View {
     enum Style {
         case outline
         case filled
+        case bare
     }
 
     /// Sanctioned cap sizes, so a bigger or smaller one is a named choice, not a stray frame.
@@ -37,6 +38,13 @@ struct KeyCapChip: View {
     /// "↵" falls back to another face that seats high, so nudge it render-only.
     private static let returnGlyphDrop: CGFloat = 1.1
 
+    private var shadowColor: Color {
+        switch style {
+        case .bare: .clear
+        case .outline, .filled: Theme.Colors.border.opacity(0.5)
+        }
+    }
+
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: Theme.Radius.keyCap, style: .continuous)
         Text(text)
@@ -49,7 +57,13 @@ struct KeyCapChip: View {
                 switch style {
                 case .filled: shape.fill(Theme.Colors.controlSurface)
                 case .outline: shape.strokeBorder(Theme.Colors.border, lineWidth: 1)
+                case .bare: Color.clear
                 }
             }
+            // The portfolio kbd's 1px foot, so a chip reads seated rather than flat.
+            .shadow(
+                color: shadowColor,
+                radius: 0,
+                y: 1)
     }
 }
